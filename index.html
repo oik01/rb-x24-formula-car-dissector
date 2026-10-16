@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>RB-X24 // FIA Ground-Effect CAD Dissector &amp; Wind Tunnel Telemetry</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230B101E%22/><text x=%2250%22 y=%2268%22 font-size=%2256%22 font-family=%22sans-serif%22 font-weight=%22900%22 fill=%22%23FFB800%22 text-anchor=%22middle%22>1</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 3D WebGL Viewport Container -->
+      <div id="viewport-container" aria-label="RB-X24 3D CAD Viewport"></div>
+
+      <!-- 2D Screen-Space CAD Callout Overlay & SVG Leader Lines -->
+      <div id="callout-layer" aria-hidden="true">
+        <svg id="callout-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="callout-pins"></div>
+      </div>
+
+      <!-- Top Telemetry Ribbon (height: 48px) -->
+      <header id="top-telemetry-ribbon" class="hud-panel">
+        <div class="ribbon-brand">
+          <span class="chassis-code">RB-X24</span>
+          <span class="chassis-divider">//</span>
+          <span class="chassis-subtitle">FIA GROUND-EFFECT CAD DISSECTOR</span>
+          <span id="hud-phase-pill" class="phase-pill" data-phase="assembled">PHASE: ASSEMBLED / t0..t3</span>
+        </div>
+
+        <div class="ribbon-telemetry" role="status" aria-live="polite">
+          <div class="tel-cell">
+            <span class="tel-label">EXPLODE</span>
+            <span id="tel-explode" class="tel-value">0%</span>
+          </div>
+          <div class="tel-cell">
+            <span class="tel-label">DOWNFORCE</span>
+            <span id="tel-downforce" class="tel-value">-1,850 kgf</span>
+          </div>
+          <div class="tel-cell">
+            <span class="tel-label">V6 PU</span>
+            <span id="tel-rpm" class="tel-value">11,400 RPM</span>
+          </div>
+          <div class="tel-cell">
+            <span class="tel-label">EXHAUST</span>
+            <span id="tel-exhaust" class="tel-value">790 °C</span>
+          </div>
+          <div class="tel-cell">
+            <span class="tel-label">DRS</span>
+            <span id="tel-drs" class="tel-value">CLOSED (0°)</span>
+          </div>
+          <div class="tel-cell">
+            <span class="tel-label">ACTIVE PARTS</span>
+            <span id="tel-parts" class="tel-value">12/12</span>
+          </div>
+        </div>
+
+        <div class="ribbon-actions">
+          <div class="camera-switcher" role="group" aria-label="Camera views">
+            <button type="button" class="cam-btn active" data-cam="front_34">Hero 3/4</button>
+            <button type="button" class="cam-btn" data-cam="side">Side</button>
+            <button type="button" class="cam-btn" data-cam="top">Top</button>
+            <button type="button" class="cam-btn" data-cam="front">Front</button>
+            <button type="button" class="cam-btn" data-cam="rear_34">Rear</button>
+            <button type="button" class="cam-btn" data-cam="closeup">V6 Bay</button>
+          </div>
+          <button type="button" id="btn-autopilot" class="action-pill">Autopilot Demo</button>
+          <button type="button" id="btn-audio" class="action-pill" aria-pressed="false">Audio: Mute</button>
+        </div>
+      </header>
+
+      <!-- Mobile/Tablet Dock Drawer Toggles -->
+      <div id="mobile-dock-bar">
+        <button type="button" id="btn-toggle-left-dock" class="mobile-dock-btn">Kinematics &amp; Aero</button>
+        <button type="button" id="btn-toggle-right-dock" class="mobile-dock-btn">12-Part CAD Spec</button>
+      </div>
+
+      <!-- Left Control Dock (width: 280px) -->
+      <aside id="left-dock" class="hud-panel side-dock" aria-label="Kinematics and Aerodynamic Controls">
+        <div class="dock-section">
+          <div class="section-header">
+            <h2 class="section-title">Master disassembly</h2>
+            <span id="val-master-explode" class="mono-readout">0%</span>
+          </div>
+          <input
+            type="range"
+            id="slider-master-explode"
+            class="cad-slider master-slider"
+            min="0"
+            max="100"
+            step="1"
+            value="0"
+            aria-label="Master Disassembly Percentage"
+          />
+        </div>
+
+        <div class="dock-section">
+          <div class="section-header">
+            <h2 class="section-title">Choreographed modes</h2>
+          </div>
+          <div class="preset-grid">
+            <button type="button" class="preset-btn active" data-preset="m4_pitstop_reassemble">
+              Assemble chassis (m4)
+            </button>
+            <button type="button" class="preset-btn" data-preset="m1_full_cad_explode">
+              Full 12-part CAD explode (m1)
+            </button>
+            <button type="button" class="preset-btn" data-preset="m2_aero_powertrain_strip">
+              Powertrain &amp; aero strip (m2)
+            </button>
+            <button type="button" class="preset-btn" data-preset="m3_drs_wind_tunnel">
+              Wind tunnel &amp; active DRS (m3)
+            </button>
+          </div>
+        </div>
+
+        <div class="dock-section">
+          <div class="section-header">
+            <h2 class="section-title">Layer-selective separation</h2>
+          </div>
+
+          <div class="layer-control">
+            <div class="layer-label-row">
+              <label for="slider-layer-aero">Aero shell &amp; wings</label>
+              <span id="val-layer-aero" class="mono-readout">0%</span>
+            </div>
+            <input
+              type="range"
+              id="slider-layer-aero"
+              class="cad-slider layer-slider"
+              data-layer="aero"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+            />
+          </div>
+
+          <div class="layer-control">
+            <div class="layer-label-row">
+              <label for="slider-layer-chassis">Survival cell &amp; Halo</label>
+              <span id="val-layer-chassis" class="mono-readout">0%</span>
+            </div>
+            <input
+              type="range"
+              id="slider-layer-chassis"
+              class="cad-slider layer-slider"
+              data-layer="chassis"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+            />
+          </div>
+
+          <div class="layer-control">
+            <div class="layer-label-row">
+              <label for="slider-layer-powertrain">1.6L V6 &amp; 8-spd gearbox</label>
+              <span id="val-layer-powertrain" class="mono-readout">0%</span>
+            </div>
+            <input
+              type="range"
+              id="slider-layer-powertrain"
+              class="cad-slider layer-slider"
+              data-layer="powertrain"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+            />
+          </div>
+
+          <div class="layer-control">
+            <div class="layer-label-row">
+              <label for="slider-layer-chassis_dynamics">Suspension, brakes &amp; wheels</label>
+              <span id="val-layer-chassis_dynamics" class="mono-readout">0%</span>
+            </div>
+            <input
+              type="range"
+              id="slider-layer-chassis_dynamics"
+              class="cad-slider layer-slider"
+              data-layer="chassis_dynamics"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+            />
+          </div>
+        </div>
+
+        <div class="dock-section">
+          <div class="section-header">
+            <h2 class="section-title">Wind tunnel &amp; datum pins</h2>
+          </div>
+
+          <label class="toggle-row" for="toggle-wind-tunnel">
+            <span class="toggle-text">Wind tunnel CFD ribbons</span>
+            <input type="checkbox" id="toggle-wind-tunnel" class="cad-checkbox" />
+            <span class="toggle-switch"></span>
+          </label>
+
+          <label class="toggle-row" for="toggle-drs-flap">
+            <span class="toggle-text">Active DRS rear flap (24°)</span>
+            <input type="checkbox" id="toggle-drs-flap" class="cad-checkbox" />
+            <span class="toggle-switch"></span>
+          </label>
+
+          <div class="callout-mode-row">
+            <span class="callout-mode-label">Callout pins</span>
+            <div class="segmented-control" role="group" aria-label="Callout pin visibility">
+              <button type="button" class="seg-btn active" data-callout-mode="auto">Auto</button>
+              <button type="button" class="seg-btn" data-callout-mode="all">All 12</button>
+              <button type="button" class="seg-btn" data-callout-mode="hidden">Hidden</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Sub-Assembly Inspector & Part Tree (width: 290px) -->
+      <aside id="right-dock" class="hud-panel side-dock" aria-label="Sub-Assembly CAD Inspector">
+        <div class="dock-section manifest-section">
+          <div class="section-header">
+            <h2 class="section-title">12-part CAD manifest</h2>
+            <span id="manifest-selection-tag" class="mono-readout">ALL ACTIVE</span>
+          </div>
+          <div id="part-manifest-list" class="manifest-list" role="listbox" aria-label="12 Sub-Assemblies"></div>
+        </div>
+
+        <div id="part-inspector-card" class="dock-section inspector-card">
+          <div class="inspector-top-row">
+            <span id="spec-code" class="spec-code-badge">ASM-08</span>
+            <span id="spec-layer" class="spec-layer-badge">POWERTRAIN</span>
+          </div>
+          <h3 id="spec-name" class="spec-part-title">1.6L V6 turbo hybrid power unit &amp; ERS</h3>
+          <p id="spec-desc" class="spec-description">
+            Stressed 90-degree 1.6L V6 internal combustion engine with axial-radial turbocharger, MGU-H shaft generator, 120 kW MGU-K, carbon airbox plenum, and hydroformed Inconel 625 3-into-1 exhaust.
+          </p>
+
+          <dl class="spec-grid">
+            <div class="spec-item">
+              <dt>Mass</dt>
+              <dd id="spec-mass">151.0 kg</dd>
+            </div>
+            <div class="spec-item">
+              <dt>FIA reg article</dt>
+              <dd id="spec-fia">FIA Tech Reg Art. 5.1</dd>
+            </div>
+            <div class="spec-item spec-full">
+              <dt>Material specification</dt>
+              <dd id="spec-material">Billet Al-Si Block / Inconel 625 Headers / Li-Ion ES</dd>
+            </div>
+            <div class="spec-item spec-full">
+              <dt>Peak load / thermal / aero</dt>
+              <dd id="spec-telemetry">9,800 N // 790 °C // 1050 BHP @ 15,000 RPM</dd>
+            </div>
+            <div class="spec-item spec-full">
+              <dt>Explosion vector (dX, dY, dZ)</dt>
+              <dd id="spec-vector">(-0.28, +0.68, +0.00 m)</dd>
+            </div>
+          </dl>
+
+          <div class="inspector-actions">
+            <button type="button" id="btn-isolate-part" class="inspector-btn primary-btn" aria-pressed="false">
+              Isolate part (X-ray)
+            </button>
+            <button type="button" id="btn-reset-view" class="inspector-btn secondary-btn">
+              Reset view
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
